@@ -1,0 +1,245 @@
+[
+  {
+    "name": "California Office of Emergency Services",
+    "category": "state emergency coordination",
+    "url": "https://www.caloes.ca.gov/",
+    "description": "Official California emergency management agency and disaster coordination page.",
+    "state_code": "CA",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "alerts",
+      "statewide",
+      "recovery"
+    ],
+    "required_information": [
+      "ZIP code",
+      "county",
+      "disaster type",
+      "current safety status"
+    ],
+    "required_documents": [
+      "government ID if available",
+      "proof of address if available"
+    ]
+  },
+  {
+    "name": "California Insurance Department Resources",
+    "category": "insurance support",
+    "url": "https://content.naic.org/state-insurance-departments",
+    "description": "Official insurance department directory and insurance complaint pathway for California.",
+    "state_code": "CA",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "insurance",
+      "claims"
+    ],
+    "required_information": [
+      "insurer name",
+      "claim number if available",
+      "property address"
+    ],
+    "required_documents": [
+      "insurance policy",
+      "damage photos",
+      "repair estimates if available"
+    ]
+  },
+  {
+    "name": "California Food and Benefits Directory",
+    "category": "food and benefits",
+    "url": "https://www.fns.usda.gov/snap/state-directory",
+    "description": "Official SNAP and state food assistance directory page for California.",
+    "state_code": "CA",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "food",
+      "benefits",
+      "income disruption"
+    ],
+    "required_information": [
+      "household size",
+      "income disruption",
+      "address or ZIP code"
+    ],
+    "required_documents": [
+      "government ID if available",
+      "proof of address",
+      "income information if available"
+    ]
+  },
+  {
+    "name": "California Local Help Finder",
+    "category": "local referrals",
+    "url": "https://www.211.org/about-us/your-local-211",
+    "description": "Local 211 and community referral entry point for California.",
+    "state_code": "CA",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "food",
+      "shelter",
+      "county services"
+    ],
+    "required_information": [
+      "ZIP code",
+      "immediate needs",
+      "household size"
+    ],
+    "required_documents": []
+  },
+  {
+    "name": "California Shelter Finder",
+    "category": "shelter support",
+    "url": "https://www.redcross.org/get-help/disaster-relief-and-recovery-services/find-an-open-shelter.html",
+    "description": "Open shelter and emergency lodging finder that may be relevant in California.",
+    "state_code": "CA",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "shelter",
+      "emergency"
+    ],
+    "required_information": [
+      "current location",
+      "household size",
+      "medical or accessibility needs"
+    ],
+    "required_documents": [
+      "photo ID if available"
+    ]
+  },
+  {
+    "name": "Listos California",
+    "category": "preparedness and recovery",
+    "url": "https://www.listoscalifornia.org/",
+    "description": "California disaster readiness and multilingual community guidance.",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "preparedness",
+      "multilingual",
+      "community"
+    ],
+    "required_information": [
+      "preferred language",
+      "county",
+      "disaster concerns"
+    ],
+    "required_documents": []
+  },
+  {
+    "name": "CalFresh",
+    "category": "food support",
+    "url": "https://www.getcalfresh.org/",
+    "description": "Food assistance application support for California residents.",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "food",
+      "benefits",
+      "income disruption"
+    ],
+    "required_information": [
+      "household size",
+      "income estimate",
+      "address",
+      "citizenship or eligibility details as required"
+    ],
+    "required_documents": [
+      "ID if available",
+      "income information",
+      "rent or utility information if available"
+    ]
+  },
+  {
+    "name": "California Wildfire and Smoke Information",
+    "category": "wildfire safety",
+    "url": "https://www.fire.ca.gov/",
+    "description": "CAL FIRE information about incidents, preparedness, and wildfire response.",
+    "disaster_types": [
+      "wildfire"
+    ],
+    "counties": [],
+    "tags": [
+      "fire",
+      "evacuation",
+      "smoke"
+    ],
+    "required_information": [
+      "county",
+      "incident area",
+      "evacuation status"
+    ],
+    "required_documents": []
+  },
+  {
+    "name": "Earthquake Warning California",
+    "category": "earthquake safety",
+    "url": "https://earthquake.ca.gov/",
+    "description": "California earthquake safety, alerts, and recovery guidance.",
+    "disaster_types": [
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "earthquake",
+      "aftershocks",
+      "safety"
+    ],
+    "required_information": [
+      "county",
+      "damage type",
+      "current safety status"
+    ],
+    "required_documents": []
+  },
+  {
+    "name": "California Veterinary Medical Reserve Corps",
+    "category": "animal support",
+    "url": "https://www.calvoad.org/",
+    "description": "Community support coordination that can help identify animal and evacuation resources.",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "pets",
+      "evacuation",
+      "community"
+    ],
+    "required_information": [
+      "pet type",
+      "current location",
+      "evacuation needs"
+    ],
+    "required_documents": [
+      "vaccination records if available",
+      "pet medications list if applicable"
+    ]
+  }
+]

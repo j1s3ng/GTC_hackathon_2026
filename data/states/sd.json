@@ -1,0 +1,129 @@
+[
+  {
+    "name": "South Dakota Office of Emergency Management",
+    "category": "state emergency coordination",
+    "url": "https://dps.sd.gov/emergency-services/emergency-management",
+    "description": "Official South Dakota emergency management agency and disaster coordination page.",
+    "state_code": "SD",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "alerts",
+      "statewide",
+      "recovery"
+    ],
+    "required_information": [
+      "ZIP code",
+      "county",
+      "disaster type",
+      "current safety status"
+    ],
+    "required_documents": [
+      "government ID if available",
+      "proof of address if available"
+    ]
+  },
+  {
+    "name": "South Dakota Insurance Department Resources",
+    "category": "insurance support",
+    "url": "https://content.naic.org/state-insurance-departments",
+    "description": "Official insurance department directory and insurance complaint pathway for South Dakota.",
+    "state_code": "SD",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "insurance",
+      "claims"
+    ],
+    "required_information": [
+      "insurer name",
+      "claim number if available",
+      "property address"
+    ],
+    "required_documents": [
+      "insurance policy",
+      "damage photos",
+      "repair estimates if available"
+    ]
+  },
+  {
+    "name": "South Dakota Food and Benefits Directory",
+    "category": "food and benefits",
+    "url": "https://www.fns.usda.gov/snap/state-directory",
+    "description": "Official SNAP and state food assistance directory page for South Dakota.",
+    "state_code": "SD",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "food",
+      "benefits",
+      "income disruption"
+    ],
+    "required_information": [
+      "household size",
+      "income disruption",
+      "address or ZIP code"
+    ],
+    "required_documents": [
+      "government ID if available",
+      "proof of address",
+      "income information if available"
+    ]
+  },
+  {
+    "name": "South Dakota Local Help Finder",
+    "category": "local referrals",
+    "url": "https://www.211.org/about-us/your-local-211",
+    "description": "Local 211 and community referral entry point for South Dakota.",
+    "state_code": "SD",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "food",
+      "shelter",
+      "county services"
+    ],
+    "required_information": [
+      "ZIP code",
+      "immediate needs",
+      "household size"
+    ],
+    "required_documents": []
+  },
+  {
+    "name": "South Dakota Shelter Finder",
+    "category": "shelter support",
+    "url": "https://www.redcross.org/get-help/disaster-relief-and-recovery-services/find-an-open-shelter.html",
+    "description": "Open shelter and emergency lodging finder that may be relevant in South Dakota.",
+    "state_code": "SD",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "shelter",
+      "emergency"
+    ],
+    "required_information": [
+      "current location",
+      "household size",
+      "medical or accessibility needs"
+    ],
+    "required_documents": [
+      "photo ID if available"
+    ]
+  }
+]

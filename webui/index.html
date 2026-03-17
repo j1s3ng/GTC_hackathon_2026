@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ReliefRoute</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="chat-shell">
+      <section class="hero-card">
+        <h1>ReliefRoute</h1>
+        <p>
+          A local disaster recovery chat for finding relevant support services.
+          Tell it what happened, and it will infer state, needs, and useful
+          resources from your messages.
+        </p>
+      </section>
+
+      <section id="chatLog" class="chat-log" aria-live="polite"></section>
+
+      <section class="composer-card">
+        <div class="composer-row">
+          <textarea
+            id="chatInput"
+            rows="4"
+            placeholder="Tell me what happened, where you are, whether you are safe, and what help you need."
+          ></textarea>
+          <button id="sendChatButton" class="primary-button" type="button">Send</button>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

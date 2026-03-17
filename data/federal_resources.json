@@ -1,0 +1,111 @@
+[
+  {
+    "name": "FEMA Disaster Assistance",
+    "category": "federal aid",
+    "url": "https://www.disasterassistance.gov/",
+    "description": "Apply for federal disaster assistance when a county has a declared disaster.",
+    "state_code": "US",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "housing",
+      "federal",
+      "cash assistance"
+    ],
+    "required_information": [
+      "disaster address",
+      "current contact info",
+      "insurance status",
+      "household members"
+    ],
+    "required_documents": [
+      "government ID",
+      "proof of occupancy or ownership",
+      "insurance policy details",
+      "damage photos"
+    ]
+  },
+  {
+    "name": "Federal Emergency Management Agency",
+    "category": "federal aid",
+    "url": "https://www.fema.gov/",
+    "description": "Official FEMA disaster preparedness, response, and recovery information.",
+    "state_code": "US",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "federal",
+      "preparedness",
+      "recovery"
+    ],
+    "required_information": [
+      "ZIP code",
+      "disaster type",
+      "household needs"
+    ],
+    "required_documents": [
+      "government ID if available",
+      "proof of address if available"
+    ]
+  },
+  {
+    "name": "SBA Disaster Assistance",
+    "category": "federal aid",
+    "url": "https://www.sba.gov/funding-programs/disaster-assistance",
+    "description": "Federal disaster loan information for homeowners, renters, nonprofits, and businesses.",
+    "state_code": "US",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "federal",
+      "loans",
+      "business",
+      "housing"
+    ],
+    "required_information": [
+      "disaster location",
+      "applicant type",
+      "damage details"
+    ],
+    "required_documents": [
+      "government ID",
+      "financial information if available",
+      "damage estimates if available"
+    ]
+  },
+  {
+    "name": "USAGov Disaster Housing and Shelter",
+    "category": "federal aid",
+    "url": "https://www.usa.gov/disaster-housing-shelter",
+    "description": "Federal guidance on shelters, temporary housing, and housing assistance after a disaster.",
+    "state_code": "US",
+    "disaster_types": [
+      "wildfire",
+      "earthquake"
+    ],
+    "counties": [],
+    "tags": [
+      "federal",
+      "housing",
+      "shelter"
+    ],
+    "required_information": [
+      "ZIP code",
+      "housing need",
+      "FEMA registration status if available"
+    ],
+    "required_documents": [
+      "government ID if available",
+      "FEMA registration number if available"
+    ]
+  }
+]
