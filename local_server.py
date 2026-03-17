@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -11,8 +12,8 @@ from urllib import error, request
 
 
 ROOT = Path(__file__).resolve().parent
-HF_CHAT_URL = "https://router.huggingface.co/v1/chat/completions"
-HF_MODEL = os.getenv("HF_MODEL", "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16")
+ONLINE_CHAT_URL = os.getenv("ONLINE_CHAT_URL", "https://api-inference.bitdeer.ai/v1/chat/completions")
+ONLINE_MODEL = os.getenv("ONLINE_MODEL", os.getenv("HF_MODEL", "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B"))
 LM_STUDIO_BASE_URL = os.getenv("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1")
 LM_STUDIO_MODEL = os.getenv("LM_STUDIO_MODEL", "nemotron")
 SYSTEM_PROMPT = """You are ReliefRoute, a disaster recovery assistant.
@@ -52,8 +53,52 @@ def post_json(url: str, payload: dict[str, Any], headers: dict[str, str], timeou
         headers=headers,
         method="POST",
     )
-    with request.urlopen(req, timeout=timeout) as response:
-        return json.loads(response.read().decode("utf-8"))
+    try:
+        with request.urlopen(req, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except error.HTTPError as exc:
+        details = exc.read().decode("utf-8", errors="ignore") if exc.fp else ""
+        raise RuntimeError(f"HTTP {exc.code}: {details or exc.reason}") from exc
+
+
+def get_json(url: str, headers: dict[str, str] | None = None, timeout: int = 10) -> dict[str, Any]:
+    req = request.Request(url=url, headers=headers or {}, method="GET")
+    try:
+        with request.urlopen(req, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except error.HTTPError as exc:
+        details = exc.read().decode("utf-8", errors="ignore") if exc.fp else ""
+        raise RuntimeError(f"HTTP {exc.code}: {details or exc.reason}") from exc
+
+
+def resolve_lmstudio_candidates() -> list[str]:
+    configured = os.getenv("LM_STUDIO_MODEL", LM_STUDIO_MODEL)
+    base_url = os.getenv("LM_STUDIO_BASE_URL", LM_STUDIO_BASE_URL).rstrip("/")
+
+    data = get_json(f"{base_url}/models")
+    model_ids = [item.get("id", "") for item in data.get("data", []) if isinstance(item, dict)]
+    model_ids = [model_id for model_id in model_ids if model_id]
+
+    candidates: list[str] = []
+    if configured and "nemotron" in configured.lower() and configured in model_ids:
+        candidates.append(configured)
+
+    nemotron_matches = [model_id for model_id in model_ids if "nemotron" in model_id.lower()]
+    for match in nemotron_matches:
+        if match not in candidates:
+            candidates.append(match)
+
+    if candidates:
+        return candidates
+
+    if configured and "nemotron" in configured.lower() and configured not in model_ids:
+        raise RuntimeError(
+            f"Configured LM_STUDIO_MODEL '{configured}' not found. Available models: {', '.join(model_ids) if model_ids else 'none'}."
+        )
+
+    raise RuntimeError(
+        f"No Nemotron model is available in LM Studio. Available models: {', '.join(model_ids) if model_ids else 'none'}."
+    )
 
 
 def build_model_messages(user_prompt: str, profile: dict[str, Any], plan: dict[str, Any], recent_history: list[dict[str, str]]) -> list[dict[str, str]]:
@@ -76,43 +121,85 @@ def build_model_messages(user_prompt: str, profile: dict[str, Any], plan: dict[s
     ]
 
 
-def call_huggingface(messages: list[dict[str, str]]) -> tuple[str, str]:
-    token = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN")
+def sanitize_model_text(text: str) -> str:
+    cleaned = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE)
+    return cleaned.strip()
+
+
+def call_online(messages: list[dict[str, str]]) -> tuple[str, str]:
+    token = (
+        os.getenv("ONLINE_API_KEY")
+        or os.getenv("BITDEER_API_KEY")
+        or os.getenv("HF_TOKEN")
+        or os.getenv("HUGGINGFACE_TOKEN")
+    )
     if not token:
-        raise RuntimeError("HF_TOKEN is not set.")
+        raise RuntimeError("ONLINE_API_KEY is not set.")
 
     body = {
-        "model": os.getenv("HF_MODEL", HF_MODEL),
+        "model": os.getenv("ONLINE_MODEL", ONLINE_MODEL),
         "messages": messages,
         "temperature": 0.2,
+        "max_tokens": 600,
         "stream": False,
     }
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": os.getenv("ONLINE_USER_AGENT", "curl/8.7.1"),
     }
-    data = post_json(HF_CHAT_URL, body, headers)
-    return data["choices"][0]["message"]["content"].strip(), "huggingface"
+    data = post_json(os.getenv("ONLINE_CHAT_URL", ONLINE_CHAT_URL), body, headers)
+    return sanitize_model_text(data["choices"][0]["message"]["content"]), "online"
 
 
 def call_lmstudio(messages: list[dict[str, str]]) -> tuple[str, str]:
-    body = {
-        "model": os.getenv("LM_STUDIO_MODEL", LM_STUDIO_MODEL),
-        "messages": messages,
-        "temperature": 0.2,
-        "stream": False,
-    }
+    candidate_models = resolve_lmstudio_candidates()
     headers = {"Content-Type": "application/json"}
-    data = post_json(f"{os.getenv('LM_STUDIO_BASE_URL', LM_STUDIO_BASE_URL).rstrip('/')}/chat/completions", body, headers)
-    return data["choices"][0]["message"]["content"].strip(), "lmstudio"
+    base_url = os.getenv("LM_STUDIO_BASE_URL", LM_STUDIO_BASE_URL).rstrip("/")
+    errors_by_model: list[str] = []
+
+    for model_name in candidate_models:
+        body = {
+            "model": model_name,
+            "messages": messages,
+            "temperature": 0.2,
+            "stream": False,
+        }
+        try:
+            data = post_json(f"{base_url}/chat/completions", body, headers)
+            return sanitize_model_text(data["choices"][0]["message"]["content"]), "lmstudio"
+        except RuntimeError as exc:
+            errors_by_model.append(f"{model_name}: {exc}")
+
+    raise RuntimeError(
+        "Nemotron models were found in LM Studio but could not be loaded. "
+        f"Attempts: {' | '.join(errors_by_model)}"
+    )
 
 
-def generate_response(user_prompt: str, profile: dict[str, Any], plan: dict[str, Any], history: list[dict[str, str]]) -> tuple[str, str]:
+def generate_response(
+    user_prompt: str,
+    profile: dict[str, Any],
+    plan: dict[str, Any],
+    history: list[dict[str, str]],
+    backend_mode: str = "auto",
+    prefer_local: bool = False,
+) -> tuple[str, str]:
     messages = build_model_messages(user_prompt, profile, plan, history)
-    try:
-        return call_huggingface(messages)
-    except (RuntimeError, error.URLError, error.HTTPError, KeyError, IndexError, TypeError, SocketTimeout):
+    mode = (backend_mode or "").strip().lower()
+    if mode == "local" or prefer_local:
         return call_lmstudio(messages)
+    if mode == "online":
+        return call_online(messages)
+
+    try:
+        return call_online(messages)
+    except (RuntimeError, error.URLError, error.HTTPError, KeyError, IndexError, TypeError, SocketTimeout) as online_exc:
+        try:
+            return call_lmstudio(messages)
+        except (RuntimeError, error.URLError, error.HTTPError, KeyError, IndexError, TypeError, SocketTimeout) as local_exc:
+            raise RuntimeError(f"Online backend failed: {online_exc} | Local fallback failed: {local_exc}") from local_exc
 
 
 class ReliefRouteHandler(SimpleHTTPRequestHandler):
@@ -126,7 +213,14 @@ class ReliefRouteHandler(SimpleHTTPRequestHandler):
                 HTTPStatus.OK,
                 {
                     "ok": True,
-                    "huggingface_model": os.getenv("HF_MODEL", HF_MODEL),
+                    "online_chat_url": os.getenv("ONLINE_CHAT_URL", ONLINE_CHAT_URL),
+                    "online_model": os.getenv("ONLINE_MODEL", ONLINE_MODEL),
+                    "online_auth_configured": bool(
+                        os.getenv("ONLINE_API_KEY")
+                        or os.getenv("BITDEER_API_KEY")
+                        or os.getenv("HF_TOKEN")
+                        or os.getenv("HUGGINGFACE_TOKEN")
+                    ),
                     "lmstudio_base_url": os.getenv("LM_STUDIO_BASE_URL", LM_STUDIO_BASE_URL),
                 },
             )
@@ -151,6 +245,8 @@ class ReliefRouteHandler(SimpleHTTPRequestHandler):
                 payload.get("profile", {}),
                 payload.get("plan", {}),
                 payload.get("history", []),
+                str(payload.get("backend_mode", "auto")),
+                bool(payload.get("prefer_local", False)),
             )
         except Exception as exc:  # noqa: BLE001
             json_response(

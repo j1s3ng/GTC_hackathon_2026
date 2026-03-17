@@ -20,6 +20,14 @@
       <section id="chatLog" class="chat-log" aria-live="polite"></section>
 
       <section class="composer-card">
+        <div class="composer-toolbar">
+          <label for="backendMode">Model backend</label>
+          <select id="backendMode" aria-label="Model backend mode">
+            <option value="auto" selected>Auto (Bitdeer → LM Studio)</option>
+            <option value="online">Bitdeer online only</option>
+            <option value="local">LM Studio local only</option>
+          </select>
+        </div>
         <div class="composer-row">
           <textarea
             id="chatInput"

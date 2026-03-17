@@ -89,6 +89,22 @@ h1 {
   gap: 16px;
 }
 
+.composer-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: var(--muted);
+}
+
+.composer-toolbar select {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--text);
+  padding: 8px 10px;
+}
+
 textarea,
 button {
   font: inherit;
@@ -175,6 +191,68 @@ textarea {
 .chat-body ul {
   margin: 0;
   padding-left: 18px;
+}
+
+.chat-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.chat-body th,
+.chat-body td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.chat-body th {
+  background: rgba(31, 42, 31, 0.06);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.chat-body tr:last-child td {
+  border-bottom: 0;
+}
+
+.chat-body a {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+.chat-body code {
+  padding: 0.15rem 0.4rem;
+  border-radius: 8px;
+  background: rgba(31, 42, 31, 0.08);
+  font-family: "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+
+.chat-body pre {
+  overflow-x: auto;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(31, 42, 31, 0.06);
+  border: 1px solid var(--line);
+}
+
+.chat-body pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.chat-body blockquote {
+  margin: 12px 0;
+  padding: 8px 14px;
+  border-left: 4px solid var(--primary);
+  background: rgba(199, 82, 42, 0.06);
+  color: var(--muted);
 }
 
 .chat-body li + li {

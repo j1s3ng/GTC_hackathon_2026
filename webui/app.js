@@ -57,6 +57,7 @@ const elements = {
   chatLog: document.querySelector("#chatLog"),
   chatInput: document.querySelector("#chatInput"),
   sendChatButton: document.querySelector("#sendChatButton"),
+  backendMode: document.querySelector("#backendMode"),
 };
 
 let appState = structuredClone(defaultState);
@@ -366,6 +367,133 @@ function escapeHtml(text) {
     .replaceAll("'", "&#39;");
 }
 
+function renderInlineMarkdown(text) {
+  let rendered = escapeHtml(text);
+  rendered = rendered.replace(/`([^`]+)`/g, "<code>$1</code>");
+  rendered = rendered.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  rendered = rendered.replace(/__([^_]+)__/g, "<strong>$1</strong>");
+  rendered = rendered.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  rendered = rendered.replace(/_([^_]+)_/g, "<em>$1</em>");
+  rendered = rendered.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+  return rendered;
+}
+
+function renderMarkdown(markdown) {
+  const normalized = String(markdown || "").replace(/\r\n/g, "\n").trim();
+  if (!normalized) return "<p></p>";
+
+  const codeBlocks = [];
+  let working = normalized.replace(/```([\w-]*)\n?([\s\S]*?)```/g, (_match, language, code) => {
+    const html = `<pre><code class="code-block${language ? ` language-${escapeHtml(language)}` : ""}">${escapeHtml(code.trim())}</code></pre>`;
+    codeBlocks.push(html);
+    return `@@CODEBLOCK_${codeBlocks.length - 1}@@`;
+  });
+
+  const lines = working.split("\n");
+  const html = [];
+  let paragraph = [];
+  let listItems = [];
+
+  const isTableRow = (value) => /\|/.test(value);
+  const isTableDivider = (value) => /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/.test(value);
+  const splitTableRow = (value) => value
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((cell) => cell.trim());
+
+  const flushParagraph = () => {
+    if (!paragraph.length) return;
+    html.push(`<p>${renderInlineMarkdown(paragraph.join(" "))}</p>`);
+    paragraph = [];
+  };
+
+  const flushList = () => {
+    if (!listItems.length) return;
+    html.push(`<ul>${listItems.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ul>`);
+    listItems = [];
+  };
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const rawLine = lines[index];
+    const line = rawLine.trim();
+
+    if (!line) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    const codeBlockMatch = line.match(/^@@CODEBLOCK_(\d+)@@$/);
+    if (codeBlockMatch) {
+      flushParagraph();
+      flushList();
+      html.push(codeBlocks[Number(codeBlockMatch[1])]);
+      continue;
+    }
+
+    if (isTableRow(line) && lines.length > 1) {
+      const nextLine = lines[index + 1]?.trim() || "";
+      if (isTableDivider(nextLine)) {
+        flushParagraph();
+        flushList();
+
+        const headerCells = splitTableRow(line);
+        const bodyRows = [];
+        let tableIndex = index + 2;
+
+        while (tableIndex < lines.length) {
+          const candidate = lines[tableIndex].trim();
+          if (!candidate || !isTableRow(candidate) || isTableDivider(candidate)) break;
+          bodyRows.push(splitTableRow(candidate));
+          tableIndex += 1;
+        }
+
+        const thead = `<thead><tr>${headerCells.map((cell) => `<th>${renderInlineMarkdown(cell)}</th>`).join("")}</tr></thead>`;
+        const tbody = bodyRows.length
+          ? `<tbody>${bodyRows.map((row) => `<tr>${row.map((cell) => `<td>${renderInlineMarkdown(cell)}</td>`).join("")}</tr>`).join("")}</tbody>`
+          : "";
+        html.push(`<table>${thead}${tbody}</table>`);
+        index = tableIndex - 1;
+        continue;
+      }
+    }
+
+    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+    if (headingMatch) {
+      flushParagraph();
+      flushList();
+      const level = Math.min(headingMatch[1].length, 6);
+      html.push(`<h${level}>${renderInlineMarkdown(headingMatch[2])}</h${level}>`);
+      continue;
+    }
+
+    const blockquoteMatch = line.match(/^>\s?(.*)$/);
+    if (blockquoteMatch) {
+      flushParagraph();
+      flushList();
+      html.push(`<blockquote>${renderInlineMarkdown(blockquoteMatch[1])}</blockquote>`);
+      continue;
+    }
+
+    const listMatch = line.match(/^[-*]\s+(.*)$/);
+    if (listMatch) {
+      flushParagraph();
+      listItems.push(listMatch[1]);
+      continue;
+    }
+
+    flushList();
+    paragraph.push(line);
+  }
+
+  flushParagraph();
+  flushList();
+
+  return html.join("");
+}
+
 function appendMessage(role, html) {
   appState.messages.push({ role, html, createdAt: new Date().toISOString() });
   renderMessages();
@@ -389,7 +517,8 @@ function renderMessages() {
   window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
 }
 
-async function callBackend(prompt, profile, plan) {
+async function callBackend(prompt, profile, plan, backendMode = "auto") {
+  const normalizedMode = ["auto", "online", "local"].includes(backendMode) ? backendMode : "auto";
   const response = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -398,6 +527,8 @@ async function callBackend(prompt, profile, plan) {
       profile,
       plan,
       history: appState.history,
+      backend_mode: normalizedMode,
+      prefer_local: normalizedMode === "local",
     }),
   });
 
@@ -414,25 +545,19 @@ async function respondToPrompt(prompt) {
   appendHistory("user", prompt);
   appendMessage("user", `<p>${escapeHtml(prompt)}</p>`);
   const plan = await buildPlan(appState.profile);
+  const backendMode = elements.backendMode?.value || "auto";
 
   try {
-    const backend = await callBackend(prompt, appState.profile, plan);
+    const backend = await callBackend(prompt, appState.profile, plan, backendMode);
     appendHistory("assistant", backend.answer);
     appendMessage(
       "assistant",
-      `<h3>Nemotron response</h3><p>${escapeHtml(backend.answer).replaceAll("\n", "<br />")}</p><p><strong>Backend:</strong> ${escapeHtml(backend.backend)}</p>`,
+      `<h3>Nemotron response</h3>${renderMarkdown(backend.answer)}<p><strong>Backend:</strong> ${escapeHtml(backend.backend)}</p>`,
     );
     return;
   } catch (error) {
-    appendMessage("system", `<p>Model backend unavailable, using local planner fallback: ${escapeHtml(error.message)}</p>`);
+    appendMessage("system", `<p>Model backend failed in <strong>${escapeHtml(backendMode)}</strong> mode. Details: ${escapeHtml(error.message)}</p>`);
   }
-
-  const fallbackHtml =
-    !isLikelyQuestion(prompt) || !appState.profile.situation
-      ? renderFullPlan(plan, appState.profile)
-      : targetedReply(plan, appState.profile, prompt);
-  appendHistory("assistant", "Local planner fallback response");
-  appendMessage("assistant", fallbackHtml);
 }
 
 elements.sendChatButton.addEventListener("click", async () => {
