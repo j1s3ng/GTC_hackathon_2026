@@ -1,6 +1,8 @@
 # ReliefRoute CA
 
-`ReliefRoute` is a disaster relief navigator for wildfire and earthquake recovery.
+`ReliefRoute` is an offline-first disaster recovery assistant built to help survivors quickly find relevant support services after wildfires, earthquakes, and other emergencies.
+
+It uses NVIDIA Nemotron to turn natural-language chat into a structured recovery profile, infer the user's state and urgent needs, and surface grounded state and federal resources. The system is designed for real disaster conditions: it supports all 50 states, separates federal and state resource databases, caches official resource pages for local use, and can run either with an online Nemotron backend or a fully local model setup. Its goal is to reduce confusion during crisis by helping people understand what aid may be relevant, what information or documents they may need, and what steps to take next.
 
 It is designed as a hackathon MVP that can:
 
