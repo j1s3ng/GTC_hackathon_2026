@@ -29,7 +29,7 @@ Today, California has the deepest built-in resource coverage, while the broader 
 
 ## What the prototype does
 
-- supports `wildfire` and `earthquake`
+- supports natural disaters and other disasters
 - prioritizes immediate safety concerns
 - creates a 24-hour recovery checklist
 - recommends relevant state/local resources and federal resources in separate lists
