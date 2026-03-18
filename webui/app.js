@@ -50,6 +50,7 @@ const defaultState = {
   },
   messages: [],
   history: [],
+  latestEvidence: null,
 };
 
 const resourceCache = { federal: null, states: {} };
@@ -58,6 +59,7 @@ const elements = {
   chatInput: document.querySelector("#chatInput"),
   sendChatButton: document.querySelector("#sendChatButton"),
   backendMode: document.querySelector("#backendMode"),
+  evidencePanel: document.querySelector("#evidencePanel"),
 };
 
 let appState = structuredClone(defaultState);
@@ -517,6 +519,59 @@ function renderMessages() {
   window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
 }
 
+function renderEvidencePanel(toolResult) {
+  if (!elements.evidencePanel) return;
+  if (!toolResult || !toolResult.results || !toolResult.results.length) {
+    elements.evidencePanel.innerHTML = `
+      <section class="evidence-empty">
+        <p class="evidence-kicker">Waiting for evidence</p>
+        <p>Ask a question in chat to see the grounded resources, source modes, and likely document requirements used for the latest answer.</p>
+      </section>
+    `;
+    return;
+  }
+
+  const resourceCards = toolResult.results.map((item) => {
+    const infoList = item.required_information?.length
+      ? `<ul>${item.required_information.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>`
+      : "<p>None listed.</p>";
+    const docsList = item.required_documents?.length
+      ? `<ul>${item.required_documents.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>`
+      : "<p>None listed.</p>";
+    return `
+      <article class="evidence-item">
+        <p class="evidence-kicker">${escapeHtml(item.jurisdiction)} resource</p>
+        <h3>${escapeHtml(item.name)}</h3>
+        <p class="evidence-meta">
+          Source mode: <strong>${escapeHtml(item.source_mode)}</strong>
+          ${item.score ? ` | Match score: <strong>${escapeHtml(item.score)}</strong>` : ""}
+        </p>
+        <p>${escapeHtml(item.snippet || "No summary available.")}</p>
+        <div class="evidence-tags">
+          <span class="evidence-tag">${escapeHtml(item.state_code || "US")}</span>
+          <span class="evidence-tag">${escapeHtml(item.source_mode)}</span>
+        </div>
+        <p><a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open source</a></p>
+        <h3>Required information</h3>
+        ${infoList}
+        <h3>Required documents</h3>
+        ${docsList}
+      </article>
+    `;
+  }).join("");
+
+  elements.evidencePanel.innerHTML = `
+    <section class="evidence-group">
+      <p class="evidence-kicker">Latest lookup</p>
+      <h3>${escapeHtml(toolResult.query || "Current grounded query")}</h3>
+      <p class="evidence-meta">State scope: <strong>${escapeHtml(toolResult.state_code || "Unknown")}</strong></p>
+    </section>
+    <section class="evidence-list">
+      ${resourceCards}
+    </section>
+  `;
+}
+
 async function callBackend(prompt, profile, plan, backendMode = "auto") {
   const normalizedMode = ["auto", "online", "local"].includes(backendMode) ? backendMode : "auto";
   const response = await fetch("/api/chat", {
@@ -549,6 +604,8 @@ async function respondToPrompt(prompt) {
 
   try {
     const backend = await callBackend(prompt, appState.profile, plan, backendMode);
+    appState.latestEvidence = backend.tool_result || null;
+    renderEvidencePanel(appState.latestEvidence);
     appendHistory("assistant", backend.answer);
     appendMessage(
       "assistant",
@@ -556,6 +613,22 @@ async function respondToPrompt(prompt) {
     );
     return;
   } catch (error) {
+    appState.latestEvidence = {
+      query: prompt,
+      state_code: appState.profile.stateCode,
+      results: plan.resources.slice(0, 5).map((resource) => ({
+        name: resource.name,
+        jurisdiction: resource.jurisdiction,
+        state_code: resource.stateCode,
+        source_mode: "local-plan",
+        score: 0,
+        snippet: resource.description,
+        url: resource.url,
+        required_information: resource.requiredInformation,
+        required_documents: resource.requiredDocuments,
+      })),
+    };
+    renderEvidencePanel(appState.latestEvidence);
     appendMessage("system", `<p>Model backend failed in <strong>${escapeHtml(backendMode)}</strong> mode. Details: ${escapeHtml(error.message)}</p>`);
   }
 }
@@ -577,3 +650,4 @@ elements.chatInput.addEventListener("keydown", async (event) => {
 });
 
 renderMessages();
+renderEvidencePanel(appState.latestEvidence);

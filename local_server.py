@@ -10,15 +10,20 @@ from socket import timeout as SocketTimeout
 from typing import Any
 from urllib import error, request
 
+from resource_tools import build_tool_block, refresh_resources, retrieve_resource_evidence
+
 
 ROOT = Path(__file__).resolve().parent
 ONLINE_CHAT_URL = os.getenv("ONLINE_CHAT_URL", "https://api-inference.bitdeer.ai/v1/chat/completions")
-ONLINE_MODEL = os.getenv("ONLINE_MODEL", os.getenv("HF_MODEL", "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B"))
+ONLINE_MODEL = os.getenv(
+    "ONLINE_MODEL",
+    os.getenv("BITDEER_MODEL", os.getenv("HF_MODEL", "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B")),
+)
 LM_STUDIO_BASE_URL = os.getenv("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1")
 LM_STUDIO_MODEL = os.getenv("LM_STUDIO_MODEL", "nemotron")
 SYSTEM_PROMPT = """You are ReliefRoute, a disaster recovery assistant.
 
-Use only the provided disaster profile, structured plan, and resource list.
+Use only the provided disaster profile, structured plan, resource list, and resource lookup tool results.
 Do not invent eligibility, deadlines, phone numbers, or qualification decisions.
 Say a service may be relevant rather than guaranteed.
 Keep the answer practical, specific, and concise.
@@ -101,7 +106,13 @@ def resolve_lmstudio_candidates() -> list[str]:
     )
 
 
-def build_model_messages(user_prompt: str, profile: dict[str, Any], plan: dict[str, Any], recent_history: list[dict[str, str]]) -> list[dict[str, str]]:
+def build_model_messages(
+    user_prompt: str,
+    profile: dict[str, Any],
+    plan: dict[str, Any],
+    recent_history: list[dict[str, str]],
+    tool_context: str,
+) -> list[dict[str, str]]:
     history_slice = recent_history[-6:] if recent_history else []
     return [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -115,7 +126,8 @@ def build_model_messages(user_prompt: str, profile: dict[str, Any], plan: dict[s
                 "Inferred disaster profile:\n"
                 f"{json.dumps(profile, indent=2)}\n\n"
                 "Structured plan and resources:\n"
-                f"{json.dumps(plan, indent=2)}"
+                f"{json.dumps(plan, indent=2)}\n\n"
+                f"{tool_context}"
             ),
         },
     ]
@@ -126,6 +138,22 @@ def sanitize_model_text(text: str) -> str:
     return cleaned.strip()
 
 
+def run_resource_lookup_tool(user_prompt: str, profile: dict[str, Any], plan: dict[str, Any]) -> dict[str, Any]:
+    state_code = str(profile.get("stateCode") or profile.get("state_code") or "CA").upper()
+    resources = list(plan.get("resources", []))
+    lower_prompt = user_prompt.lower()
+    refresh_requested = any(term in lower_prompt for term in ("refresh", "update cache", "rescrape", "scrape latest"))
+    if refresh_requested:
+        refresh_resources(state_code)
+    return retrieve_resource_evidence(
+        user_prompt,
+        state_code,
+        selected_resources=resources,
+        refresh=False,
+        limit=5,
+    )
+
+
 def call_online(messages: list[dict[str, str]]) -> tuple[str, str]:
     token = (
         os.getenv("ONLINE_API_KEY")
@@ -134,7 +162,7 @@ def call_online(messages: list[dict[str, str]]) -> tuple[str, str]:
         or os.getenv("HUGGINGFACE_TOKEN")
     )
     if not token:
-        raise RuntimeError("ONLINE_API_KEY is not set.")
+        raise RuntimeError("No online model token is configured. Set BITDEER_API_KEY or ONLINE_API_KEY.")
 
     body = {
         "model": os.getenv("ONLINE_MODEL", ONLINE_MODEL),
@@ -185,19 +213,24 @@ def generate_response(
     history: list[dict[str, str]],
     backend_mode: str = "auto",
     prefer_local: bool = False,
-) -> tuple[str, str]:
-    messages = build_model_messages(user_prompt, profile, plan, history)
+) -> tuple[str, str, dict[str, Any]]:
+    tool_result = run_resource_lookup_tool(user_prompt, profile, plan)
+    messages = build_model_messages(user_prompt, profile, plan, history, build_tool_block(tool_result))
     mode = (backend_mode or "").strip().lower()
     if mode == "local" or prefer_local:
-        return call_lmstudio(messages)
+        answer, backend = call_lmstudio(messages)
+        return answer, backend, tool_result
     if mode == "online":
-        return call_online(messages)
+        answer, backend = call_online(messages)
+        return answer, backend, tool_result
 
     try:
-        return call_online(messages)
+        answer, backend = call_online(messages)
+        return answer, backend, tool_result
     except (RuntimeError, error.URLError, error.HTTPError, KeyError, IndexError, TypeError, SocketTimeout) as online_exc:
         try:
-            return call_lmstudio(messages)
+            answer, backend = call_lmstudio(messages)
+            return answer, backend, tool_result
         except (RuntimeError, error.URLError, error.HTTPError, KeyError, IndexError, TypeError, SocketTimeout) as local_exc:
             raise RuntimeError(f"Online backend failed: {online_exc} | Local fallback failed: {local_exc}") from local_exc
 
@@ -240,7 +273,7 @@ class ReliefRouteHandler(SimpleHTTPRequestHandler):
             return
 
         try:
-            answer, backend = generate_response(
+            answer, backend, tool_result = generate_response(
                 payload.get("prompt", ""),
                 payload.get("profile", {}),
                 payload.get("plan", {}),
@@ -256,7 +289,7 @@ class ReliefRouteHandler(SimpleHTTPRequestHandler):
             )
             return
 
-        json_response(self, HTTPStatus.OK, {"answer": answer, "backend": backend})
+        json_response(self, HTTPStatus.OK, {"answer": answer, "backend": backend, "tool_result": tool_result})
 
 
 def main() -> None:

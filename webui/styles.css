@@ -34,11 +34,18 @@ body {
     linear-gradient(180deg, var(--bg), #fbf7ef);
 }
 
-.chat-shell {
-  width: min(1080px, 100%);
+.app-shell {
+  width: min(1400px, 100%);
   margin: 0 auto;
   padding: 24px;
   min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.9fr);
+  gap: 18px;
+}
+
+.chat-shell {
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -46,7 +53,8 @@ body {
 
 .hero-card,
 .composer-card,
-.chat-message {
+.chat-message,
+.evidence-card {
   border: 1px solid var(--line);
   background: var(--panel);
   backdrop-filter: blur(10px);
@@ -55,7 +63,8 @@ body {
 }
 
 .composer-card,
-.hero-card {
+.hero-card,
+.evidence-card {
   padding: 20px;
 }
 
@@ -148,6 +157,8 @@ textarea {
   flex-direction: column;
   gap: 16px;
   min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .chat-message {
@@ -271,15 +282,112 @@ textarea {
   width: 120px;
 }
 
+.evidence-shell {
+  min-height: 0;
+}
+
+.evidence-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.evidence-header p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.evidence-panel {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.evidence-empty,
+.evidence-group,
+.evidence-item {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.evidence-empty,
+.evidence-group {
+  padding: 16px;
+}
+
+.evidence-kicker {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--secondary);
+  font-weight: 700;
+}
+
+.evidence-group h3,
+.evidence-item h3 {
+  font-size: 1rem;
+}
+
+.evidence-meta,
+.evidence-item p,
+.evidence-item li {
+  color: var(--muted);
+}
+
+.evidence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.evidence-item {
+  padding: 14px;
+}
+
+.evidence-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.evidence-tag {
+  display: inline-flex;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--tag);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.evidence-item ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.evidence-item a {
+  color: var(--primary-dark);
+}
+
 @media (max-width: 1080px) {
-  .chat-shell {
+  .app-shell {
     width: 100%;
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 720px) {
-  .chat-shell {
+  .app-shell {
     padding: 14px;
+  }
+
+  .chat-shell {
     gap: 12px;
   }
 
